@@ -47,6 +47,7 @@ financial-research-studio/
 │   └── static/
 │       └── index.html        # Custom chat interface & built-in A2UI renderer
 ├── agents-cli-manifest.yaml  # Agent deployment configuration
+├── deploy.sh                 # Automated cross-account GCP deployment script
 ├── project_brief.md          # Project domain brief and specification
 ├── demo.gif                  # Recorded interaction demonstration
 └── README.md                 # Project documentation
@@ -54,45 +55,27 @@ financial-research-studio/
 
 ---
 
-## Local Setup & Development Instructions
+## Automated Cross-Account GCP Deployment
 
-### Prerequisites
-* Python 3.11+
-* Google Cloud SDK (`gcloud`) authenticated with project access
-* `uv` package manager
+To deploy this entire project into a new Google Cloud Platform account with a single command, run the automated `deploy.sh` script:
 
-### 1. Install Agent Dependencies
 ```bash
-uv pip install -r requirements.txt
+./deploy.sh
 ```
 
-### 2. Configure Environment Variables
-Set your Google Cloud project and location:
-```bash
-export GOOGLE_CLOUD_PROJECT="<YOUR_GCP_PROJECT_ID>"
-export GOOGLE_CLOUD_LOCATION="us-east1"
-```
-
-### 3. Run the Agent Web UI Locally
-To run the ADK Web UI locally:
-```bash
-adk web app
-```
-
-### 4. Run the FastAPI Proxy Frontend Locally
-Navigate to the `frontend` folder, install dependencies, and start the proxy server:
-```bash
-cd frontend
-uv pip install -r requirements.txt
-export AGENT_DIRECTORY="app"
-export AGENT_ENGINE_RESOURCE_NAME="<YOUR_DEPLOYED_REASONING_ENGINE_ID>"
-python main.py
-```
-*(The local server will start on port 8080).*
+### What `deploy.sh` Handles Automatically:
+1. **API Provisioning**: Enables `aiplatform`, `run`, `firestore`, `storage`, `cloudbuild`, and `iam` APIs.
+2. **Cloud Storage Asset Bucket**: Creates a public GCS bucket (`gs://<PROJECT_ID>-financial-studio-assets`) with object-viewer access for generated infographics and videos.
+3. **Firestore Initialization**: Initializes a Native-mode Firestore database for financial metric persistence.
+4. **Agent Runtime Deployment**: Deploys the ADK agent engine via `agents-cli deploy` and extracts the generated Reasoning Engine resource name.
+5. **IAM Service Account Bindings**:
+   - Grants `roles/datastore.user` and GCS `roles/storage.objectAdmin` to the Agent Engine service account.
+   - Grants `roles/aiplatform.user` to the Cloud Run compute service account so the frontend proxy can reach the agent over A2A.
+6. **Frontend Proxy Deployment**: Deploys the FastAPI chat UI to Cloud Run with environment variables pre-configured.
 
 ---
 
-## Deployment Workflow
+## Manual Deployment Workflow
 
 ### Deploy Agent to Agent Runtime
 ```bash
